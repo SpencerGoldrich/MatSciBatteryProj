@@ -32,8 +32,8 @@ parameters["Positive electrode thickness [m]"] = 80*10**(-6)
 #Test parameters from Cara's Excel work
 testparams = {
     "parameters":parameters,
-    "porosity":[0.1,0.2,0.3,0.4,0.5,0.6,0.7],
-    "cthick":np.multiply((10**(-6)),range(50,550,100)),
+    "porosity":[0.2,0.22,0.24,0.26,0.28], #0.24 intial max
+    "cthick":np.multiply((10**(-6)),range(150,850,100)),
 }
 n = len(testparams["cthick"])
 
@@ -42,8 +42,8 @@ def test(Experiment, testparams, ps):
     sols = []
     j = 0
     for i in range(ps[0],ps[1]):
-        #parameters["Positive electrode porosity"] = testparams['porosity'][i]
-        parameters["Positive electrode thickness [m]"] = testparams['cthick'][i]
+        parameters["Positive electrode porosity"] = testparams['porosity'][i]
+        #parameters["Positive electrode thickness [m]"] = testparams['cthick'][i]
 
         parameters["Positive electrode active material volume fraction"] = (1-parameters["Positive electrode porosity"])/0.737
         parameters["Negative electrode porosity"] = parameters["Positive electrode porosity"]
@@ -60,7 +60,6 @@ def test(Experiment, testparams, ps):
     return(sols)
 
 sols = test(Experiment, testparams, [0,n])
-pybamm.dynamic_plot(sols,["Terminal voltage"])
+pybamm.dynamic_plot(sols)
 
-cap = 1
-plt.plot(range(0,7),cap)
+plt.plot(range(0,1),cap)
