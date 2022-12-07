@@ -6,14 +6,7 @@ import pybamm
 import matplotlib.pyplot as plt
 import numpy as np
 
-#Can Specify cutoff voltage
-Experiment = pybamm.Experiment(
-    [
-        ('Discharge at 1A until 3.0V')
-    ]
-)
-
-#These are base parameters from the paper and our research
+#These are base parameters from the paper and our research/analysis
 parameters = pybamm.ParameterValues("Ramadass2004")
 parameters["Electrode height [m]"] = 0.2
 parameters["Electrode width [m]"] = 0.2
@@ -23,27 +16,22 @@ parameters["Positive particle radius [m]"] = 10e-6
 parameters["Positive electrode density [kg.m-3]"] = 4239
 parameters["Separator density [kg.m-3]"] = 916.8
 parameters["Separator porosity"] = 0.39
-#These below are base cases
-parameters["Positive electrode porosity"] = 0.3
-parameters["Positive electrode thickness [m]"] = 80*10**(-6)
-#parameters["Number of cells connected in series to make a battery"] = 15
-#parameters["Number of electrodes connected in parallel to make a cell"] = 71
+parameters["Positive electrode porosity"] = 0.24
+parameters["Positive electrode thickness [m]"] = 81*10**(-6)
 
-#Test parameters from Cara's Excel work
-testparams = {
-    "parameters":parameters,
-    "porosity":[0.2,0.22,0.24,0.26,0.28], #0.24 intial max
-    "cthick":np.multiply((10**(-6)),range(150,850,100)),
-}
-n = len(testparams["cthick"])
+def test(Experiment, testparams, ps, experiment_type):
+    if (experiment_type == "Thickness Test") or (experiment_type == "Porosity Test"):
+        parameters = testparams["parameters"]
+    elif experiment_type == "Cycle Test":
+        parameters = testparams
 
-def test(Experiment, testparams, ps):
-    parameters = testparams["parameters"]
     sols = []
     j = 0
     for i in range(ps[0],ps[1]):
-        parameters["Positive electrode porosity"] = testparams['porosity'][i]
-        #parameters["Positive electrode thickness [m]"] = testparams['cthick'][i]
+        if experiment_type == "Porosity Test":
+            parameters["Positive electrode porosity"] = testparams['porosity'][i]
+        elif experiment_type == "Thickness Test":
+            parameters["Positive electrode thickness [m]"] = testparams['cthick'][i]
 
         parameters["Positive electrode active material volume fraction"] = (1-parameters["Positive electrode porosity"])/0.737
         parameters["Negative electrode porosity"] = parameters["Positive electrode porosity"]
@@ -59,7 +47,50 @@ def test(Experiment, testparams, ps):
         print(j)
     return(sols)
 
-sols = test(Experiment, testparams, [0,n])
-pybamm.dynamic_plot(sols)
+#Porosity and Thickness
+'''
+Experiment = pybamm.Experiment(
+    [
+    'Discharge at 0.28A until 3.0V'
+    ]
+)
 
-plt.plot(range(0,1),cap)
+testparams = {
+    "parameters":parameters,
+    "porosity":[0.2,0.22,0.24,0.26,0.28], #0.24 intial max
+    "cthick":np.multiply((10**(-6)),range(150,850,100)),
+}
+n = len(testparams["cthick"])
+
+sols = test(Experiment, testparams, [0,n], "Porosity Test")
+pybamm.dynamic_plot(sols)
+'''
+
+#Coloumbic/Voltage/Energy Efficiencies
+'''
+num = 5
+Experiment = pybamm.Experiment(
+    [
+    'Discharge at 0.28A until 3.0V',
+    'Rest at 3.0V for 1 hour',
+    'Charge at 0.28A until 4.2V',
+    'Rest at 4.2V for 1 hour'
+    ] * num
+)
+
+sols = test(Experiment, parameters, [0,1], "Cycle Test")
+pybamm.dynamic_plot(sols,["Terminal voltage [V]"])
+
+coloumbic_eff = []
+voltage_eff = []
+energy_eff = []
+for i in range(0,num-1):
+    a = 100 * sols[0].all_summary_variables[4*i + 4]['Measured capacity [A.h]'] / sols[0].all_summary_variables[4*i + 2]['Measured capacity [A.h]']
+    coloumbic_eff.append(a)
+    b = 100 * sols[0].all_summary_variables[4*i + 4]['Maximum voltage [V]'] / sols[0].all_summary_variables[4*i + 2]['Maximum voltage [V]']
+    voltage_eff.append(b)
+    energy_eff.append(100 * (b/100 * a/100))
+'''
+
+a = 1
+plt.show()
